@@ -47,7 +47,25 @@ ggplot(data=filtered_data,aes(x=surface_total, y=bathrooms)) + geom_point()
 
 ##There is no lineal sense with the bathrooms variable, so, I will recover variables from property description
 
+## Text to lowercase
+limpieza_texto <- function(base){
+  base <- base %>% mutate(description = str_to_lower(description) )
+  base <- base %>% mutate(description = iconv(description, from = "UTF-8", to = "ASCII//TRANSLIT"))
+}
 
+limpieza_texto(train)
+limpieza_texto(test)
+
+## Creating the number of floors variable:
+var_npisos <-function(base){
+  base <- base %>% mutate(n_pisos = str_extract(description,"(\\w+|\\d+) pisos")) %>%
+    mutate(n_pisos = ifelse(property_type == "Casa", n_pisos,NA))
+  
+  return(base)
+}
+
+train <- var_npisos(train)
+test <- var_npisos(test)
 
 #Explore data
 prop.table(table(train$property_type)) ## In the training set 76% are apartments
