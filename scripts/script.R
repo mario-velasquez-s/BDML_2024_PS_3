@@ -45,7 +45,8 @@ ggplot(data=train,aes(x=rooms, y=bathrooms)) + geom_point()
 filtered_data <- subset(train, surface_total < 200)
 ggplot(data=filtered_data,aes(x=surface_total, y=bathrooms)) + geom_point()
 
-##There is no lineal sense with the bathrooms variable, so, I will 
+##There is no lineal sense with the bathrooms variable, so, I will recover variables from property description
+
 
 
 #Explore data
