@@ -159,3 +159,5 @@ train_espacial$discotecas_density <- sapply(st_intersects(train_buffer, discotec
 test_espacial$discotecas_density <- sapply(st_intersects(test_buffer, discotecas), length)
 train_espacial$colegios_density <- sapply(st_intersects(train_buffer, colegios), length)
 test_espacial$colegios_density <- sapply(st_intersects(test_buffer, colegios), length)
+
+#Comentario prueba
