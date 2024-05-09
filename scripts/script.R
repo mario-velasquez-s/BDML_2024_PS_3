@@ -139,8 +139,8 @@ summary(total_covered$diff) ## Total surface and covered are almost the same. Th
 
 
 var_surface <-function(base){
-  base <- base %>% mutate(surface = str_extract(description, "\\d+(?=\\s*(mts2|mts))"))
-  base <- base %>% mutate(surface = if_else(is.na(surface), str_extract(title, "\\d+(?=\\s*(mts2|mts))"), surface))
+  base <- base %>% mutate(surface = str_extract(description, "\\d+(?=\\s*(mts2|mts|mt2|mt|m2))"))
+  base <- base %>% mutate(surface = if_else(is.na(surface), str_extract(title, "\\d+(?=\\s*(mts2|mts|mt2|mt|m2))"), surface))
   #Until this point we recovered 13% of surface data. 
   
   #We only keep numbers and impute NAs with variables bedrooms
@@ -169,13 +169,36 @@ histogram_comparativo <- ggplot(combined_data, aes(x = area, fill = dataset)) +
   labs(title = "", x = "Área (mt2)", y = "Obs", fill = "Dataset") +
   theme_minimal()
 histogram_comparativo
-## In the test set most common are 1-3 rooms, while in train 2-4 rooms.
-
-## In Chapinero apartments of 1 rooms seem more popular than in the training set.
+## In Chapinero properties seem smaller than in the train set.
 summary(train$area)
 summary(test$area)
 
+#Still lack 49.6% of area/surface information
 
+ggplot(data=test,aes(x=factor(rooms_imp_numerico), y=area)) + geom_boxplot() # We observe rooms could help us to recover this information
+
+area_with_rooms <- function(base){
+  base <- base %>% 
+    group_by(rooms_imp_numerico) %>% 
+    mutate(mean_area = mean(area, na.rm=T)) %>%
+    ungroup()
+  base <- base %>%
+    mutate(area = ifelse(is.na(area) == T, yes = mean_area, no = area))
+  return(base)
+}
+
+train <- area_with_rooms(train)
+test <- area_with_rooms(test)
+
+
+## I only keep variables of my interest
+useful_vars <- function(base){
+  base <- base %>% dplyr::select(-surface_total,-surface_covered, -rooms, -mean_area,
+                                 -n_pisos, -rooms_imp,-surface)
+  return(base)
+}
+train <- useful_vars(train)
+test <- useful_vars(test)
 
 # ------------------------------------------------------------------------------
 
