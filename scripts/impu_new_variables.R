@@ -97,6 +97,42 @@ summary(test$rooms_imp_numerico)
 
 
 
+# Imputing information about number of bathrooms
+
+numeros_escritos <- c( "con","un","dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez")
+dos_diez <- as.character(2:10)
+numeros_numericos <- c(1,1,dos_diez)
+
+var_baños <-function(base){
+  base <- base %>% mutate(baños_imp =str_extract(description, regex("(\\w+|\\d+) (bano|banos)")))
+  base <- base %>% mutate(baños_imp = if_else(is.na(baños_imp), str_extract(title, regex("(\\w+|\\d+) (bano|banos)")), baños_imp))
+  
+  #Converting text numbers to digits
+  base <- base %>% mutate(baños_imp = str_replace_all(baños_imp, setNames(numeros_numericos,numeros_escritos)))
+  
+  #We only keep numbers and impute NAs with variables bedrooms
+  base <- base %>% mutate(baño_imp_numerico = as.integer(str_extract(baños_imp,"\\d+")))
+  #Until this point we recovered 38,9% of rooms data. I now will impute with the variable "bathrooms"
+  
+  base <- base %>% mutate(baños = if_else(is.na(bathrooms),baño_imp_numerico,bathrooms)) %>%
+    dplyr::select(-baños_imp,-baño_imp_numerico)%>%
+    mutate(baños = if_else(baños>10, 1, baños))
+  #we recovered 86,6% of rooms data. I now will impute with the variable "bathrooms"
+  
+   # mutate(rooms_imp_numerico = if_else(is.na(rooms_imp_numerico), rooms, rooms_imp_numerico)) %>%
+    #mutate(rooms_imp_numerico = if_else(is.na(rooms_imp_numerico), bedrooms, rooms_imp_numerico)) %>%
+    #mutate(rooms_imp_numerico = if_else(rooms_imp_numerico>10, 1, rooms_imp_numerico))
+  
+  
+  return(base)
+}
+
+train <- var_baños(train)
+test <- var_baños(test)
+
+
+
+
 # Imputing information about area
 total_covered <- train %>% mutate(diff = surface_total - surface_covered, na.rm=TRUE) %>% 
   dplyr::select(diff)
