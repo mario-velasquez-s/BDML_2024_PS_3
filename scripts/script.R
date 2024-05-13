@@ -57,8 +57,16 @@ source("scripts/geographic_variables.R")
 
 # Explore data ------------------------------------------------------------
 
-prop.table(table(train$property_type)) ## In the training set 76% are apartments
-prop.table(table(test$property_type)) ## While in the test set 97% are apartments
+round(prop.table(table(train$property_type)),3) ## In the training set 76% are apartments
+round(prop.table(table(test$property_type)),3) ## While in the test set 97% are apartments
 ## Hence in Chapinero people rarely sell houses.
 
+round(prop.table(table(train$rooms_imp_numerico)), 3)
+round(prop.table(table(test$rooms_imp_numerico)),3) ## In Chapinero apartments of 1 rooms seem more popular than in the training set.
 
+round(prop.table(table(train$baños)), 3)
+round(prop.table(table(test$baños)),3)
+
+## In Chapinero properties seem smaller than in the train set.
+summary(train$area)
+summary(test$area)
