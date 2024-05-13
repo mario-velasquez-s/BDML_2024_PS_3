@@ -125,7 +125,7 @@ var_rooms_imp <-function(base){
 train <- var_rooms_imp(train)
 test <- var_rooms_imp(test)
 
-ggplot(test, aes(x = factor(rooms_imp_numerico))) +
+ggplot(train, aes(x = factor(rooms_imp_numerico))) +
   geom_bar() +
   labs(title="", x="Cuartos", y="Obs") + 
   theme_minimal() ## In the test set most common are 1-3 rooms, while in train 2-4 rooms.
@@ -141,7 +141,7 @@ summary(test$rooms_imp_numerico)
 total_covered <- train %>% mutate(diff = surface_total - surface_covered, na.rm=TRUE) %>% 
   dplyr::select(diff)
 summary(total_covered$diff) ## Total surface and covered are almost the same. Their mean difference is 4.75 m2.
-                            ## I will replace first by the description, and then by the covered.
+                            ## I will replace first based in the description, and then by the covered.
 
 
 var_surface <-function(base){
