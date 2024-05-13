@@ -99,9 +99,9 @@ summary(test$rooms_imp_numerico)
 
 # Imputing information about number of bathrooms
 
-numeros_escritos <- c( "con","un","dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez")
+numeros_escritos <- c( "y","su","con","un","dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez")
 dos_diez <- as.character(2:10)
-numeros_numericos <- c(1,1,dos_diez)
+numeros_numericos <- c(1,1,1,1,dos_diez)
 
 var_baños <-function(base){
   base <- base %>% mutate(baños_imp =str_extract(description, regex("(\\w+|\\d+) (bano|banos)")))
@@ -115,14 +115,11 @@ var_baños <-function(base){
   #Until this point we recovered 38,9% of rooms data. I now will impute with the variable "bathrooms"
   
   base <- base %>% mutate(baños = if_else(is.na(bathrooms),baño_imp_numerico,bathrooms)) %>%
-    dplyr::select(-baños_imp,-baño_imp_numerico)%>%
+    dplyr::select(-baño_imp_numerico,-baños_imp)%>%
     mutate(baños = if_else(baños>10, 1, baños))
   #we recovered 86,6% of rooms data. I now will impute with the variable "bathrooms"
   
-   # mutate(rooms_imp_numerico = if_else(is.na(rooms_imp_numerico), rooms, rooms_imp_numerico)) %>%
-    #mutate(rooms_imp_numerico = if_else(is.na(rooms_imp_numerico), bedrooms, rooms_imp_numerico)) %>%
-    #mutate(rooms_imp_numerico = if_else(rooms_imp_numerico>10, 1, rooms_imp_numerico))
-  
+  base <- base %>% mutate(baños = if_else(is.na(baños),1,baños))
   
   return(base)
 }
@@ -130,6 +127,10 @@ var_baños <-function(base){
 train <- var_baños(train)
 test <- var_baños(test)
 
+ggplot(test, aes(x = factor(baños))) +
+  geom_bar() +
+  labs(title="", x="Pisos", y="Obs") + 
+  theme_minimal()
 
 
 
@@ -138,7 +139,6 @@ total_covered <- train %>% mutate(diff = surface_total - surface_covered, na.rm=
   dplyr::select(diff)
 summary(total_covered$diff) ## Total surface and covered are almost the same. Their mean difference is 4.75 m2.
 ## I will replace first based in the description, and then by the covered.
-
 
 var_surface <-function(base){
   base <- base %>% mutate(surface = str_extract(description, "\\d+(?=\\s*(mts2|mts|mt2|mt|m2))"))
@@ -177,11 +177,11 @@ summary(test$area)
 
 #Still lack 49.6% of area/surface information
 
-ggplot(data=test,aes(x=factor(rooms_imp_numerico), y=area)) + geom_boxplot() # We observe rooms could help us to recover this information
+ggplot(data=test,aes(x=factor(bathrooms), y=area)) + geom_boxplot() # We observe bathrooms could help us to recover this information
 
 area_with_rooms <- function(base){
   base <- base %>% 
-    group_by(rooms_imp_numerico) %>% 
+    group_by(bathrooms) %>% 
     mutate(mean_area = mean(area, na.rm=T)) %>%
     ungroup()
   base <- base %>%
@@ -196,7 +196,7 @@ test <- area_with_rooms(test)
 ## I only keep variables of my interest
 useful_vars <- function(base){
   base <- base %>% dplyr::select(-surface_total,-surface_covered, -rooms, -mean_area,
-                                 -n_pisos, -rooms_imp,-surface)
+                                 -n_pisos, -rooms_imp,-surface, -bathrooms,-bedrooms)
   return(base)
 }
 train <- useful_vars(train)

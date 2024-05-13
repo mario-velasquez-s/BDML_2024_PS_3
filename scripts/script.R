@@ -27,6 +27,7 @@ p_load(rio, # import/export data
 
 
 # 1: Initial Data Manipulation -----------------------------------------------
+user <- Sys.getenv("USERNAME") # or you can hardcode the username if needed
 if (user == "Maria.Arias") {
   setwd("C:/Users/Maria.Arias/OneDrive - Universidad de los andes/MSc Economics/Big Data & Machine Learning/Problem set 3/carpeta equipo/BDML_2024_PS_3")
 } else if (user == "marti") {
@@ -53,14 +54,9 @@ source("scripts/impu_new_variables.R")
 ###############################################################################
 source("scripts/geographic_variables.R")
 
-# Geographic Data ---------------------------------------------------------
-
-
 
 # Explore data ------------------------------------------------------------
 
-
-#Explore data
 prop.table(table(train$property_type)) ## In the training set 76% are apartments
 prop.table(table(test$property_type)) ## While in the test set 97% are apartments
 ## Hence in Chapinero people rarely sell houses.
