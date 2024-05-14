@@ -31,7 +31,7 @@ user <- Sys.getenv("USERNAME") # or you can hardcode the username if needed
 if (user == "Maria.Arias") {
   setwd("C:/Users/Maria.Arias/OneDrive - Universidad de los andes/MSc Economics/Big Data & Machine Learning/Problem set 3/carpeta equipo/BDML_2024_PS_3")
 } else if (user == "marti") {
-  setwd("C:/Users/marti/OneDrive - Universidad de los andes/BDML - Datos/PS3")
+  setwd("C:/Users/marti/OneDrive/Documentos/BDML_2024/BDML_2024/BDML_2024_PS_3_definitivo")
 }
 train <- read.csv("data/train.csv")
 test <- read.csv("data/test.csv")
@@ -52,6 +52,8 @@ source("scripts/impu_new_variables.R")
 ###############################################################################
 #                           Creation of geographic data                               
 ###############################################################################
+
+
 source("scripts/geographic_variables.R")
 
 
