@@ -108,8 +108,16 @@ ggplot(data=train,aes(x=factor(cod_loc), y=price)) + geom_boxplot() + theme_mini
 
 #We check if is a matter of area. But it isn't. The mean and the minimum are the highest.
 train <- train %>% mutate(price_per_area = price / area)
-ggplot(data=train,aes(x=factor(cod_loc), y=price_per_area)) + geom_boxplot() + theme_minimal()
+ggplot(data=train,aes(x=factor(cod_loc), y=price_per_area)) + geom_boxplot(outlier.shape = NA) + theme_minimal()
 groupby_mean(train,localidad,price_per_area)
+
+# Other variables such as mean number of rooms is different for Chapinero too 
+ggplot(data=train,aes(x=factor(cod_loc), y=rooms_imp_numerico)) + geom_boxplot() + theme_minimal() ##Less rooms
+
+train <- train %>% mutate(price_per_rooms = price / rooms_imp_numerico)
+groupby_mean(train,localidad,price_per_rooms) ## The highest price per number of rooms
+
+
 
 # Ideally, we will use only Chapinero properties in the train set, but they're 
 # only 307 observations. So, we will...
