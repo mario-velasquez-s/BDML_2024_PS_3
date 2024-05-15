@@ -35,6 +35,8 @@ if (user == "Maria.Arias") {
 }
 train <- read.csv("data/train.csv")
 test <- read.csv("data/test.csv")
+train_copy <- train
+test_copy <- test
 str(test)
 
 train_miss <- skim(train)
@@ -44,18 +46,28 @@ print(test_miss)
 # Surface, rooms and bathrooms have significant missings.
 
 ###############################################################################
-#           Imputation and creation of variables from description 
+#                           Creation of geographic data    
+#                   (Takes to long to run. To avoid running, run
+#                line 61 and 64 to get the resulting data frames)
 ###############################################################################
-source("scripts/impu_new_variables.R")
-
-
-###############################################################################
-#                           Creation of geographic data                               
-###############################################################################
-
 
 source("scripts/geographic_variables.R")
 
+
+###############################################################################
+#                         Start here to save time
+###############################################################################
+# Read the 'test' shapefile
+train <- st_read("data/train_json_barrios.geojson")
+
+# Read the 'train' shapefile
+test <- st_read("data/test_json_barrios.geojson")
+
+###############################################################################
+#           Imputation and creation of variables from description 
+###############################################################################
+
+source("scripts/impu_new_variables.R")
 
 # Explore data ------------------------------------------------------------
 

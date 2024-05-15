@@ -4,7 +4,6 @@
 # Problem Set 3
 # 
 # Creation of new variables based on text and imputation
-
 train %>% count(bathrooms)
 ggplot(data=train,aes(x=bedrooms, y=bathrooms)) + geom_point()
 ggplot(data=train,aes(x=rooms, y=bathrooms)) + geom_point()

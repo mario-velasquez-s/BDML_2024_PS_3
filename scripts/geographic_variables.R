@@ -4,7 +4,6 @@
 # Problem Set 3
 # 
 # Creation of geographic data using OPEN MAPS
-
 test <- test %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326, agr = "constant")
 
@@ -46,7 +45,6 @@ school <- bogota %>%
 colegios <- school$osm_points
 
 ################Join
-
 # Calculate the shortest distance to the nearest restaurant for each property
 train$dist_nearest_restaurant <- st_nearest_feature(train, restaurantes)
 test$dist_nearest_restaurant <- st_nearest_feature(test, restaurantes)
@@ -70,22 +68,59 @@ train$dist_nearest_colegios <- st_distance(train, colegios[st_nearest_feature(tr
 test$dist_nearest_colegios <- st_distance(test, colegios[st_nearest_feature(test, colegios), ], by_element = TRUE)
 
 
-
 # Define a radius in meters (e.g., 1000 meters)
-radius <- 1000 #Ajustar
+radius_100 <- 100 #Ajustar
 
 # Create a buffer around each property
-train_buffer <- st_buffer(train, dist = radius)
-test_buffer <- st_buffer(test, dist = radius)
+train_buffer <- st_buffer(train, dist = radius_100, nQuadSegs = 3)
+test_buffer <- st_buffer(test, dist = radius_100, nQuadSegs = 3)
 
 # Count restaurants within the buffer
-train$restaurant_density <- sapply(st_intersects(train_buffer, restaurantes), length)
-test$restaurant_density <- sapply(st_intersects(test_buffer, restaurantes), length)
-train$parques_density <- sapply(st_intersects(train_buffer, parques), length)
-test$parques_density <- sapply(st_intersects(test_buffer, parques), length)
-train$discotecas_density <- sapply(st_intersects(train_buffer, discotecas), length)
-test$discotecas_density <- sapply(st_intersects(test_buffer, discotecas), length)
-train$colegios_density <- sapply(st_intersects(train_buffer, colegios), length)
-test$colegios_density <- sapply(st_intersects(test_buffer, colegios), length)
+train$restaurant_100m <- sapply(st_intersects(train_buffer, restaurantes), length)
+test$restaurant_100m <- sapply(st_intersects(test_buffer, restaurantes), length)
+train$parques_100m <- sapply(st_intersects(train_buffer, parques), length)
+test$parques_100m <- sapply(st_intersects(test_buffer, parques), length)
+train$discotecas_100m <- sapply(st_intersects(train_buffer, discotecas), length)
+test$discotecas_100m <- sapply(st_intersects(test_buffer, discotecas), length)
+train$colegios_100m <- sapply(st_intersects(train_buffer, colegios), length)
+test$colegios_100m <- sapply(st_intersects(test_buffer, colegios), length)
+
+# Define a radius in meters (e.g., 1000 meters)
+radius_300 <- 300 #Ajustar
+
+# Create a buffer around each property
+train_buffer <- st_buffer(train, dist = radius_300, nQuadSegs = 3)
+test_buffer <- st_buffer(test, dist = radius_300, nQuadSegs = 3)
+
+# Count restaurants within the buffer
+train$restaurant_300m <- sapply(st_intersects(train_buffer, restaurantes), length)
+test$restaurant_300m <- sapply(st_intersects(test_buffer, restaurantes), length)
+train$parques_300m <- sapply(st_intersects(train_buffer, parques), length)
+test$parques_300m <- sapply(st_intersects(test_buffer, parques), length)
+train$discotecas_300m <- sapply(st_intersects(train_buffer, discotecas), length)
+test$discotecas_300m <- sapply(st_intersects(test_buffer, discotecas), length)
+train$colegios_300m <- sapply(st_intersects(train_buffer, colegios), length)
+test$colegios_300m <- sapply(st_intersects(test_buffer, colegios), length)
+
+localidades <-st_read("data/poligonos-localidades.geojson")
+
+test <- st_join(test, localidades, join = st_within)
+
+# Do the same for the train dataset if needed
+train <- st_join(train, localidades, join = st_within)
+
+barrios <-st_read("data/barrios_prueba.geojson")
+
+test <- st_join(test, barrios, join = st_within)
+
+# Do the same for the train dataset if needed
+train <- st_join(train, barrios, join = st_within)
+
+
+st_write(test, "data/test_shp.shp") #Shapefile
+st_write(train, "data/train_shp.shp") #Shapefile
+
+st_write(test, "data/test_json_barrios.geojson")
+st_write(train, "data/train_json_barrios.geojson")
 
 
