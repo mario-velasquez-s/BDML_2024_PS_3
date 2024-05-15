@@ -192,7 +192,45 @@ train <- area_with_rooms(train)
 test <- area_with_rooms(test)
 
 
+
 ## I only keep variables of my interest
+train_miss <- skim(train)
+test_miss <- skim(test)
+print(train_miss)
+print(test_miss)
+
+#Localidad description is missing, I impute them with cod_loc and erase the 255 that I don't have information.
+sin_localidad <- train %>% filter(is.na(localidad)) %>% dplyr::select(cod_loc, localidad)
+unique(sin_localidad$cod_loc)
+table(sin_localidad$cod_loc) #Falta Suba
+
+table(train$localidad,train$cod_loc)
+
+imp_localidad <- function(base){
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==1, "Usaquén",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==2, "Chapinero",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==3, "Candelaria",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==4, "San Cristóbal",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==6, "Tunjuelito",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==7, "Bosa",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==8, "Kennedy",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==9, "Fontibón",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==10, "Engativá",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==11, "Suba",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==12, "Barrios Unidos",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==13, "Teusaquillo",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==14, "Los Mártires",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==15, "Antonio Nariño",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==16, "Puente Aranda",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==18, "Rafael Uribe",localidad))
+  base <- base %>% mutate(localidad = ifelse(is.na(localidad) & cod_loc==19, "Ciudad Bolívar",localidad))
+  
+  return(base)
+}
+
+train <- imp_localidad(train)
+test <- imp_localidad(test)
+
 useful_vars <- function(base){
   base <- base %>% dplyr::select(-surface_total,-surface_covered, -rooms, -mean_area,
                                  -n_pisos, -rooms_imp,-surface, -bathrooms,-bedrooms)

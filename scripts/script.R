@@ -51,7 +51,7 @@ print(test_miss)
 #                line 61 and 64 to get the resulting data frames)
 ###############################################################################
 
-source("scripts/geographic_variables.R")
+#source("scripts/geographic_variables.R")
 
 
 ###############################################################################
@@ -84,3 +84,34 @@ round(prop.table(table(test$baños)),3)
 ## In Chapinero properties seem smaller than in the train set.
 summary(train$area)
 summary(test$area)
+
+## An instrumental function to estimate mean of variables group_by a particular other variable
+groupby_mean <- function(base,grupo_por,variable){
+  summary <- base %>%
+    group_by({{grupo_por}}) %>%
+    summarise(count = n(),
+              mean = mean({{variable}}),
+              sd = sd({{variable}}),
+              min= min({{variable}}),
+              max = max({{variable}}))
+  print(summary)
+}
+
+
+## We notice there are advertisements for different months and years, in both databases.
+## There is no significant variation between years and months
+ggplot(data=train,aes(x=factor(month), y=price)) + geom_boxplot() + theme_minimal()
+groupby_mean(train,month,price)
+
+## Now, we notice that prices in Chapinero are the highest in the train data 
+ggplot(data=train,aes(x=factor(cod_loc), y=price)) + geom_boxplot() + theme_minimal()
+
+#We check if is a matter of area. But it isn't. The mean and the minimum are the highest.
+train <- train %>% mutate(price_per_area = price / area)
+ggplot(data=train,aes(x=factor(cod_loc), y=price_per_area)) + geom_boxplot() + theme_minimal()
+groupby_mean(train,localidad,price_per_area)
+
+# Ideally, we will use only Chapinero properties in the train set, but they're 
+# only 307 observations. So, we will...
+
+
