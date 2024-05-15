@@ -23,7 +23,13 @@ p_load(rio, # import/export data
        visdat,
        caret,
        sf,
-       osmdata)
+       osmdata,
+       tidymodels,
+       parsnip,
+       glmnet,
+       rattle,
+       spatialsample,
+       recipes)
 
 
 # 1: Initial Data Manipulation -----------------------------------------------
@@ -122,4 +128,36 @@ groupby_mean(train,localidad,price_per_rooms) ## The highest price per number of
 # Ideally, we will use only Chapinero properties in the train set, but they're 
 # only 307 observations. So, we will...
 
+###############################################################################
+#                                 Models 
+###############################################################################
 
+#I set my internal test sample
+chapitrain <- train %>% subset(localidad== "Chapinero")
+traintrain <- train %>% subset(localidad != "Chapinero")
+
+nrow(chapitrain)/nrow(train)
+
+#Setting elastic net
+elastic_net_spec <- linear_reg(penalty = tune(), mixture = tune()) %>%
+  set_engine("glmnet")
+
+grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
+  expand_grid(mixture = c(0, 0.25,  0.5, 0.75,  1))
+
+# Set workflows
+
+rec1 <- recipe(traintrain) %>%
+  update_role(property_type, dist_nearest_restaurant, dist_nearest_parques, 
+              n_pisos_numerico, rooms_imp_numerico, baños, area, new_role = "predictor") %>%
+  update_role(price, new_role = "outcome") %>%
+  step_novel(all_nominal_predictors()) %>%   # para las clases no antes vistas en el train. 
+  step_dummy(all_nominal_predictors()) %>%  # crea dummies para las variables categóricas
+  step_zv(all_predictors()) %>%   #  elimina predictores con varianza cero (constantes)
+  step_normalize(all_predictors())  # normaliza los predictores.
+
+workflow_1 <- workflow() %>% 
+  # Agregar la receta de preprocesamiento de datos. En este caso la receta 1
+  add_recipe(rec1) %>%
+  # Agregar la especificación del modelo de regresión Elastic Net
+  add_model(elastic_net_spec)

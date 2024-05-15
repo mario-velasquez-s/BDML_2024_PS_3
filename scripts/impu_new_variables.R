@@ -231,6 +231,15 @@ imp_localidad <- function(base){
 train <- imp_localidad(train)
 test <- imp_localidad(test)
 
+
+#Variables as factors
+imp_factors <- function(base){
+  base <- base %>% mutate(property_type = factor(base$property_type, levels= c("Apartamento","Casa")))
+  base <- base %>% mutate(localidad = factor(base$localidad))
+}
+train <- imp_factors(train)
+test <- imp_factors(test)
+
 useful_vars <- function(base){
   base <- base %>% dplyr::select(-surface_total,-surface_covered, -rooms, -mean_area,
                                  -n_pisos, -rooms_imp,-surface, -bathrooms,-bedrooms)
