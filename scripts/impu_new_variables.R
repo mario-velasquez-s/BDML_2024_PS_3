@@ -191,7 +191,7 @@ area_with_rooms <- function(base){
 train <- area_with_rooms(train)
 test <- area_with_rooms(test)
 
-
+train <- train %>% filter(!is.na(area))
 
 ## I only keep variables of my interest
 train_miss <- skim(train)
@@ -239,6 +239,8 @@ imp_factors <- function(base){
 }
 train <- imp_factors(train)
 test <- imp_factors(test)
+
+train
 
 useful_vars <- function(base){
   base <- base %>% dplyr::select(-surface_total,-surface_covered, -rooms, -mean_area,

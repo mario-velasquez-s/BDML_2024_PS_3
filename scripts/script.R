@@ -17,7 +17,6 @@ p_load(rio, # import/export data
        stargazer, ## tables/output to TEX. 
        MASS,
        rvest,
-       purr,
        dplyr,
        ggplot2,
        visdat,
@@ -123,6 +122,7 @@ ggplot(data=train,aes(x=factor(cod_loc), y=rooms_imp_numerico)) + geom_boxplot()
 train <- train %>% mutate(price_per_rooms = price / rooms_imp_numerico)
 groupby_mean(train,localidad,price_per_rooms) ## The highest price per number of rooms
 
+train <- train %>% dplyr::select(-price_per_rooms,-price_per_area)
 
 
 # Ideally, we will use only Chapinero properties in the train set, but they're 
@@ -145,11 +145,13 @@ elastic_net_spec <- linear_reg(penalty = tune(), mixture = tune()) %>%
 grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
   expand_grid(mixture = c(0, 0.25,  0.5, 0.75,  1))
 
+#property_type, dist_nearest_restaurant, dist_nearest_parques,
+#  n_pisos_numerico, rooms_imp_numerico, baños, area, localidad
 # Set workflows
-
-rec1 <- recipe(traintrain) %>%
-  update_role(property_type, dist_nearest_restaurant, dist_nearest_parques, 
-              n_pisos_numerico, rooms_imp_numerico, baños, area, new_role = "predictor") %>%
+#dist_nearest_restaurant, dist_nearest_parques,
+rec1 <- recipe(chapitrain) %>%
+  update_role(property_type,  rooms_imp_numerico, area, dist_nearest_restaurant,
+              dist_nearest_parques, baños, n_pisos_numerico, new_role = "predictor") %>%
   update_role(price, new_role = "outcome") %>%
   step_novel(all_nominal_predictors()) %>%   # para las clases no antes vistas en el train. 
   step_dummy(all_nominal_predictors()) %>%  # crea dummies para las variables categóricas
@@ -164,7 +166,7 @@ workflow_1 <- workflow() %>%
 
 ## Set the validation process
 set.seed(15052024)
-block_folds <- spatial_block_cv(traintrain, v=5)
+block_folds <- spatial_block_cv(chapitrain, v=5)
 autoplot(block_folds)
 
 tune_rest1 <- tune_grid(workflow_1,
@@ -176,7 +178,17 @@ tune_rest1 <- tune_grid(workflow_1,
 collect_metrics(tune_rest1)
 best_tune_res1 <- select_best(tune_rest1, metric="mae")
 res1_final <- finalize_workflow(workflow_1,best_tune_res1)
-EN_final1_fit <- fit(res1_final, data = traintrain)
+EN_final1_fit <- fit(res1_final, data = chapitrain)
 
 augment(EN_final1_fit, new_data = chapitrain) %>%
   mae(truth = price, estimate = .pred)
+
+#Predicciones
+predicciones <- predict(EN_final1_fit, new_data = test) %>%
+  bind_cols(test)
+
+submission <- predicciones %>%
+  dplyr::select(property_id, .pred) %>%
+  rename(price = .pred)
+
+write_csv(submission, "predicciones/submission.csv")
