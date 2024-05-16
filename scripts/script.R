@@ -17,7 +17,7 @@ p_load(rio, # import/export data
        stargazer, ## tables/output to TEX. 
        MASS,
        rvest,
-       httr,
+       purr,
        dplyr,
        ggplot2,
        visdat,
@@ -161,3 +161,22 @@ workflow_1 <- workflow() %>%
   add_recipe(rec1) %>%
   # Agregar la especificación del modelo de regresión Elastic Net
   add_model(elastic_net_spec)
+
+## Set the validation process
+set.seed(15052024)
+block_folds <- spatial_block_cv(traintrain, v=5)
+autoplot(block_folds)
+
+tune_rest1 <- tune_grid(workflow_1,
+                        resamples = block_folds,
+                        grid = grid_values,
+                        metrics = metric_set(mae)
+)
+
+collect_metrics(tune_rest1)
+best_tune_res1 <- select_best(tune_rest1, metric="mae")
+res1_final <- finalize_workflow(workflow_1,best_tune_res1)
+EN_final1_fit <- fit(res1_final, data = traintrain)
+
+augment(EN_final1_fit, new_data = chapitrain) %>%
+  mae(truth = price, estimate = .pred)
