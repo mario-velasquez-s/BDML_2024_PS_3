@@ -127,7 +127,7 @@ train <- train %>% dplyr::select(-price_per_rooms,-price_per_area)
 
 
 # Ideally, we will use only Chapinero properties in the train set, but there 
-# only 307 observations. So, we will...
+# only 307 observations. So, we will try with different combinations of bases for training.
 
 ###############################################################################
 #                                 Models 
@@ -140,7 +140,7 @@ chapicandetrain <- train %>% subset(localidad== "Chapinero" | localidad== "Cande
 chapisoletrain <- train %>% subset(localidad== "Chapinero" | barriocomu== "La Soledad")
 
 
-nrow(chapitrain)/nrow(train)
+#nrow(chapitrain)/nrow(train)
 
 #Setting elastic net
 elastic_net_spec <- linear_reg(penalty = tune(), mixture = tune()) %>%
@@ -155,12 +155,11 @@ grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
 #dist_nearest_restaurant, dist_nearest_parques,
 
 predecir<- function(base_train){
-  
 
 rec1 <- recipe(base_train) %>%
-  update_role(property_type,  rooms_imp_numerico, area, dist_nearest_restaurant,
+  update_role(property_type,  area, dist_nearest_restaurant,
               dist_nearest_parques, baños, n_pisos_numerico,dist_nearest_universidades,
-              dist_nearest_discotecas, new_role = "predictor") %>%
+              new_role = "predictor") %>%
   update_role(price, new_role = "outcome") %>%
   step_novel(all_nominal_predictors()) %>%   # para las clases no antes vistas en el train. 
   step_dummy(all_nominal_predictors()) %>%  # crea dummies para las variables categóricas
@@ -186,6 +185,7 @@ tune_rest1 <- tune_grid(workflow_1,
 
 collect_metrics(tune_rest1)
 best_tune_res1 <- select_best(tune_rest1, metric="mae")
+print(best_tune_res1)
 res1_final <- finalize_workflow(workflow_1,best_tune_res1)
 EN_final1_fit <- fit(res1_final, data = base_train)
 
@@ -200,7 +200,7 @@ print(augment(EN_final1_fit, new_data = chapitrain) %>%
 predecir(chapitrain)
 
 #Predicciones
-predicciones <- predict(EN_final1_fit, new_data = test) %>%
+predicciones <- predict(predecir(chapitrain), new_data = test) %>%
   bind_cols(test)
 
 submission <- predicciones %>%

@@ -132,6 +132,19 @@ ggplot(test, aes(x = factor(baños))) +
   theme_minimal()
 
 
+# Creating a variable of squared number of rooms 
+var_sq_rooms <- function(base){
+  
+  base <- base %>% mutate(sq_rooms = rooms_imp_numerico^2,
+                          sq_baños = baños^2)
+  return(base)
+  
+}
+
+train <- var_sq_rooms(train)
+test <- var_sq_rooms(test)
+
+
 
 # Imputing information about area
 total_covered <- train %>% mutate(diff = surface_total - surface_covered, na.rm=TRUE) %>% 
