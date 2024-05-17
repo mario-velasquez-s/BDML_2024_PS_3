@@ -149,16 +149,22 @@ elastic_net_spec <- linear_reg(penalty = tune(), mixture = tune()) %>%
 grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
   expand_grid(mixture = c(0, 0.25,  0.5, 0.75,  1))
 
-#property_type, dist_nearest_restaurant, dist_nearest_parques,
-#  n_pisos_numerico, rooms_imp_numerico, baños, area, localidad
+#-------------------------------------------------------------------------------
+#                         VARIABLES' POOL
+#-------------------------------------------------------------------------------
+
+#property_type, dist_nearest_restaurant, dist_nearest_parques, dist_nearest_universidades,
+#  n_pisos_numerico, rooms_imp_numerico, baños, area, localidad,
+# sq_baños, sq_rooms, iluminado, remodelado, terraza, ascensor
+
 # Set workflows
-#dist_nearest_restaurant, dist_nearest_parques,
 
 predecir<- function(base_train){
 
 rec1 <- recipe(base_train) %>%
   update_role(property_type,  area, dist_nearest_restaurant,
               dist_nearest_parques, baños, n_pisos_numerico,dist_nearest_universidades,
+              terraza, ascensor,
               new_role = "predictor") %>%
   update_role(price, new_role = "outcome") %>%
   step_novel(all_nominal_predictors()) %>%   # para las clases no antes vistas en el train. 
@@ -192,7 +198,7 @@ EN_final1_fit <- fit(res1_final, data = base_train)
 print(augment(EN_final1_fit, new_data = chapitrain) %>%
   mae(truth = price, estimate = .pred))
 
-#return(EN_final1_fit)
+return(EN_final1_fit)
 
 }
 
