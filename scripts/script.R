@@ -136,6 +136,9 @@ train <- train %>% dplyr::select(-price_per_rooms,-price_per_area)
 #I set my internal test sample
 chapitrain <- train %>% subset(localidad== "Chapinero")
 traintrain <- train %>% subset(localidad != "Chapinero")
+chapicandetrain <- train %>% subset(localidad== "Chapinero" | localidad== "Candelaria")
+chapisoletrain <- train %>% subset(localidad== "Chapinero" | barriocomu== "La Soledad")
+
 
 nrow(chapitrain)/nrow(train)
 
@@ -150,9 +153,14 @@ grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
 #  n_pisos_numerico, rooms_imp_numerico, baños, area, localidad
 # Set workflows
 #dist_nearest_restaurant, dist_nearest_parques,
-rec1 <- recipe(chapitrain) %>%
+
+predecir<- function(base_train){
+  
+
+rec1 <- recipe(base_train) %>%
   update_role(property_type,  rooms_imp_numerico, area, dist_nearest_restaurant,
-              dist_nearest_parques, baños, n_pisos_numerico, new_role = "predictor") %>%
+              dist_nearest_parques, baños, n_pisos_numerico,dist_nearest_universidades,
+              dist_nearest_discotecas, new_role = "predictor") %>%
   update_role(price, new_role = "outcome") %>%
   step_novel(all_nominal_predictors()) %>%   # para las clases no antes vistas en el train. 
   step_dummy(all_nominal_predictors()) %>%  # crea dummies para las variables categóricas
@@ -167,7 +175,7 @@ workflow_1 <- workflow() %>%
 
 ## Set the validation process
 set.seed(15052024)
-block_folds <- spatial_block_cv(chapitrain, v=5)
+block_folds <- spatial_block_cv(base_train, v=5)
 autoplot(block_folds)
 
 tune_rest1 <- tune_grid(workflow_1,
@@ -179,10 +187,17 @@ tune_rest1 <- tune_grid(workflow_1,
 collect_metrics(tune_rest1)
 best_tune_res1 <- select_best(tune_rest1, metric="mae")
 res1_final <- finalize_workflow(workflow_1,best_tune_res1)
-EN_final1_fit <- fit(res1_final, data = chapitrain)
+EN_final1_fit <- fit(res1_final, data = base_train)
 
-augment(EN_final1_fit, new_data = chapitrain) %>%
-  mae(truth = price, estimate = .pred)
+print(augment(EN_final1_fit, new_data = chapitrain) %>%
+  mae(truth = price, estimate = .pred))
+
+#return(EN_final1_fit)
+
+}
+
+
+predecir(chapitrain)
 
 #Predicciones
 predicciones <- predict(EN_final1_fit, new_data = test) %>%
