@@ -37,7 +37,9 @@ if (user == "Maria.Arias") {
   setwd("C:/Users/Maria.Arias/OneDrive - Universidad de los andes/MSc Economics/Big Data & Machine Learning/Problem set 3/carpeta equipo/BDML_2024_PS_3")
 } else if (user == "marti") {
   setwd("C:/Users/marti/OneDrive/Documentos/BDML_2024/BDML_2024/BDML_2024_PS_3_definitivo")
-}
+} else if (user == "mario") {
+  setwd("C:/Users/mario/Desktop/TODO/UNI ANDES/SEM 8 (2024-1)/Big Data y Machine Learning/Taller 3/BDML_2024_PS_3")
+} 
 train <- read.csv("data/train.csv")
 test <- read.csv("data/test.csv")
 
@@ -124,7 +126,7 @@ groupby_mean(train,localidad,price_per_rooms) ## The highest price per number of
 train <- train %>% dplyr::select(-price_per_rooms,-price_per_area)
 
 
-# Ideally, we will use only Chapinero properties in the train set, but they're 
+# Ideally, we will use only Chapinero properties in the train set, but there 
 # only 307 observations. So, we will...
 
 ###############################################################################
