@@ -44,6 +44,15 @@ school <- bogota %>%
 
 colegios <- school$osm_points
 
+##University
+
+university <- bogota %>%
+  add_osm_feature(key = 'amenity', value = 'university') %>%
+  osmdata_sf()
+
+# Extract university points
+universidades <- university$osm_points
+
 ################Join
 # Calculate the shortest distance to the nearest restaurant for each property
 train$dist_nearest_restaurant <- st_nearest_feature(train, restaurantes)
@@ -54,7 +63,8 @@ train$dist_nearest_discotecas <- st_nearest_feature(train, discotecas)
 test$dist_nearest_discotecas <- st_nearest_feature(test, discotecas)
 train$dist_nearest_colegios <- st_nearest_feature(train, colegios)
 test$dist_nearest_colegios <- st_nearest_feature(test, colegios)
-
+train$dist_nearest_universidades <- st_nearest_feature(train, universidades)
+test$dist_nearest_universidades <- st_nearest_feature(test, universidades)
 
 
 # Convert the distances to more readable units (meters or kilometers as required)
@@ -66,6 +76,8 @@ train$dist_nearest_discotecas <- st_distance(train, discotecas[st_nearest_featur
 test$dist_nearest_discotecas <- st_distance(test, discotecas[st_nearest_feature(test, discotecas), ], by_element = TRUE)
 train$dist_nearest_colegios <- st_distance(train, colegios[st_nearest_feature(train, colegios), ], by_element = TRUE)
 test$dist_nearest_colegios <- st_distance(test, colegios[st_nearest_feature(test, colegios), ], by_element = TRUE)
+train$dist_nearest_universidades <- st_distance(train,universidades[st_nearest_feature(train, universidades), ], by_element = TRUE)
+test$dist_nearest_universidades <- st_distance(test,universidades[st_nearest_feature(test, universidades), ], by_element = TRUE)
 
 
 # Define a radius in meters (e.g., 1000 meters)
@@ -120,7 +132,7 @@ train <- st_join(train, barrios, join = st_within)
 st_write(test, "data/test_shp.shp") #Shapefile
 st_write(train, "data/train_shp.shp") #Shapefile
 
-st_write(test, "data/test_json_barrios.geojson")
-st_write(train, "data/train_json_barrios.geojson")
+st_write(test, "data/test_json_v2.geojson")
+st_write(train, "data/train_json_v2.geojson")
 
 

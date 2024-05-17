@@ -40,8 +40,7 @@ if (user == "Maria.Arias") {
 }
 train <- read.csv("data/train.csv")
 test <- read.csv("data/test.csv")
-train_copy <- train
-test_copy <- test
+
 str(test)
 
 train_miss <- skim(train)
@@ -63,10 +62,10 @@ print(test_miss)
 #                         Start here to save time
 ###############################################################################
 # Read the 'test' shapefile
-train <- st_read("data/train_json_barrios.geojson")
+train <- st_read("data/train_json_v2.geojson")
 
 # Read the 'train' shapefile
-test <- st_read("data/test_json_barrios.geojson")
+test <- st_read("data/test_json_v2.geojson")
 
 ###############################################################################
 #           Imputation and creation of variables from description 
