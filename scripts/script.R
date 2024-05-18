@@ -28,7 +28,9 @@ p_load(rio, # import/export data
        glmnet,
        rattle,
        spatialsample,
-       recipes)
+       recipes,
+       lwgeom,
+       class)
 
 
 # 1: Initial Data Manipulation -----------------------------------------------
@@ -62,10 +64,10 @@ print(test_miss)
 #                         Start here to save time
 ###############################################################################
 # Read the 'test' shapefile
-train <- st_read("data/train_json_v2.geojson")
+train <- st_read("data/train_json_v3.geojson")
 
 # Read the 'train' shapefile
-test <- st_read("data/test_json_v2.geojson")
+test <- st_read("data/test_json_v3.geojson")
 
 ###############################################################################
 #           Imputation and creation of variables from description 

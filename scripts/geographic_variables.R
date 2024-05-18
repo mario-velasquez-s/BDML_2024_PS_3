@@ -128,11 +128,44 @@ test <- st_join(test, barrios, join = st_within)
 # Do the same for the train dataset if needed
 train <- st_join(train, barrios, join = st_within)
 
+estratos <-st_read("data/estrato-socioeconomico-bogota-2019.geojson")
+
+train <- st_join(train, estratos, join = st_within)
+test <- st_join(test, estratos, join = st_within)
+
+train_con_estrato <- train[!is.na(train$estrato), ]
+train_sin_estrato <- train[is.na(train$estrato), ]
+
+test_con_estrato <- test[!is.na(test$estrato), ]
+test_sin_estrato <- test[is.na(test$estrato), ]
+
+# Para el conjunto de entrenamiento
+train_coords_con_estrato <- as.data.frame(st_coordinates(train_con_estrato))
+train_coords_sin_estrato <- as.data.frame(st_coordinates(train_sin_estrato))
+
+# Para el conjunto de prueba
+test_coords_con_estrato <- as.data.frame(st_coordinates(test_con_estrato))
+test_coords_sin_estrato <- as.data.frame(st_coordinates(test_sin_estrato))
+
+estrato_predicho_train <- knn(train = train_coords_con_estrato, test = train_coords_sin_estrato, cl = train_con_estrato$estrato, k = 3)
+train_sin_estrato$estrato <- estrato_predicho_train
+
+# Imputación para el conjunto de prueba
+estrato_predicho_test <- knn(train = test_coords_con_estrato, test = test_coords_sin_estrato, cl = test_con_estrato$estrato, k = 3)
+test_sin_estrato$estrato <- estrato_predicho_test
+
+train <- rbind(train_con_estrato, train_sin_estrato)
+test <- rbind(test_con_estrato, test_sin_estrato)
+
+# Revisar las tablas de frecuencia de los estratos imputados
+table(train$estrato)
+table(test$estrato)
+
 
 st_write(test, "data/test_shp.shp") #Shapefile
 st_write(train, "data/train_shp.shp") #Shapefile
 
-st_write(test, "data/test_json_v2.geojson")
-st_write(train, "data/train_json_v2.geojson")
+st_write(test, "data/test_json_v3.geojson")
+st_write(train, "data/train_json_v3.geojson")
 
 
