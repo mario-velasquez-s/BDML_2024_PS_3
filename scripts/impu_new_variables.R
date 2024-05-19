@@ -132,6 +132,19 @@ ggplot(test, aes(x = factor(baños))) +
   theme_minimal()
 
 
+# Creating a variable of squared number of rooms 
+var_sq_rooms <- function(base){
+  
+  base <- base %>% mutate(sq_rooms = rooms_imp_numerico^2,
+                          sq_baños = baños^2)
+  return(base)
+  
+}
+
+train <- var_sq_rooms(train)
+test <- var_sq_rooms(test)
+
+
 
 # Imputing information about area
 total_covered <- train %>% mutate(diff = surface_total - surface_covered, na.rm=TRUE) %>% 
@@ -192,6 +205,55 @@ train <- area_with_rooms(train)
 test <- area_with_rooms(test)
 
 train <- train %>% filter(!is.na(area))
+
+
+# Imputing information about number of bathrooms
+
+var_terraza <-function(base){
+  base <- base %>% mutate(terraza_signal =str_extract(description, regex("(terraza|terrazas|balcon)")))
+  base <- base %>% mutate(terraza = if_else(is.na(terraza_signal), 0, 1)) %>% dplyr::select(-terraza_signal)
+  
+  return(base)
+}
+
+train <- var_terraza(train)
+test <- var_terraza(test)
+
+#Create a variable if it has significant ilumination (that's important in Bogotá)
+var_iluminado <-function(base){
+  base <- base %>% mutate(ilu_signal =str_extract(description, regex("(iluminado|iluminados|iluminadas)")))
+  base <- base %>% mutate(iluminado = if_else(is.na(ilu_signal), 0, 1)) %>% dplyr::select(-ilu_signal)
+  
+  return(base)
+}
+
+train <- var_iluminado(train)
+test <- var_iluminado(test)
+
+
+#Create a variable if it was recently refurbished
+var_remo <-function(base){
+  base <- base %>% mutate(remo_signal =str_extract(description, regex("(remodelado|renovado|cambiado|cambiados|remodeladas|remodelada|renovados|nuevo|nuevos|nuevas|nueva)")))
+  base <- base %>% mutate(remodelado = if_else(is.na(remo_signal), 0, 1)) %>% dplyr::select(-remo_signal)
+  
+  return(base)
+}
+
+train <- var_remo(train)
+test <- var_remo(test)
+
+#Create a variable if it has lift
+var_lift <-function(base){
+  base <- base %>% mutate(lift_signal =str_extract(description, regex("(ascensor|asensor)")))
+  base <- base %>% mutate(ascensor = if_else(is.na(lift_signal), 0, 1)) %>% dplyr::select(-lift_signal)
+  
+  return(base)
+}
+
+train <- var_lift(train)
+test <- var_lift(test)
+
+
 
 ## I only keep variables of my interest
 train_miss <- skim(train)

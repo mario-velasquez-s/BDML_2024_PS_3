@@ -39,7 +39,9 @@ if (user == "Maria.Arias") {
   setwd("C:/Users/Maria.Arias/OneDrive - Universidad de los andes/MSc Economics/Big Data & Machine Learning/Problem set 3/carpeta equipo/BDML_2024_PS_3")
 } else if (user == "marti") {
   setwd("C:/Users/marti/OneDrive/Documentos/BDML_2024/BDML_2024/BDML_2024_PS_3_definitivo")
-}
+} else if (user == "mario") {
+  setwd("C:/Users/mario/Desktop/TODO/UNI ANDES/SEM 8 (2024-1)/Big Data y Machine Learning/Taller 3/BDML_2024_PS_3")
+} 
 train <- read.csv("data/train.csv")
 test <- read.csv("data/test.csv")
 
@@ -126,8 +128,8 @@ groupby_mean(train,localidad,price_per_rooms) ## The highest price per number of
 train <- train %>% dplyr::select(-price_per_rooms,-price_per_area)
 
 
-# Ideally, we will use only Chapinero properties in the train set, but they're 
-# only 307 observations. So, we will...
+# Ideally, we will use only Chapinero properties in the train set, but there 
+# only 307 observations. So, we will try with different combinations of bases for training.
 
 ###############################################################################
 #                                 Models 
@@ -136,8 +138,11 @@ train <- train %>% dplyr::select(-price_per_rooms,-price_per_area)
 #I set my internal test sample
 chapitrain <- train %>% subset(localidad== "Chapinero")
 traintrain <- train %>% subset(localidad != "Chapinero")
+chapicandetrain <- train %>% subset(localidad== "Chapinero" | localidad== "Candelaria")
+chapisoletrain <- train %>% subset(localidad== "Chapinero" | barriocomu== "La Soledad")
 
-nrow(chapitrain)/nrow(train)
+
+#nrow(chapitrain)/nrow(train)
 
 #Setting elastic net
 elastic_net_spec <- linear_reg(penalty = tune(), mixture = tune()) %>%
@@ -146,13 +151,23 @@ elastic_net_spec <- linear_reg(penalty = tune(), mixture = tune()) %>%
 grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
   expand_grid(mixture = c(0, 0.25,  0.5, 0.75,  1))
 
-#property_type, dist_nearest_restaurant, dist_nearest_parques,
-#  n_pisos_numerico, rooms_imp_numerico, baños, area, localidad
+#-------------------------------------------------------------------------------
+#                         VARIABLES' POOL
+#-------------------------------------------------------------------------------
+
+#property_type, dist_nearest_restaurant, dist_nearest_parques, dist_nearest_universidades,
+#  n_pisos_numerico, rooms_imp_numerico, baños, area, localidad,
+# sq_baños, sq_rooms, iluminado, remodelado, terraza, ascensor
+
 # Set workflows
-#dist_nearest_restaurant, dist_nearest_parques,
-rec1 <- recipe(chapitrain) %>%
-  update_role(property_type,  rooms_imp_numerico, area, dist_nearest_restaurant,
-              dist_nearest_parques, baños, n_pisos_numerico, new_role = "predictor") %>%
+
+predecir<- function(base_train){
+
+rec1 <- recipe(base_train) %>%
+  update_role(property_type,  area, dist_nearest_restaurant,
+              dist_nearest_parques, baños, n_pisos_numerico,dist_nearest_universidades,
+              terraza, ascensor,
+              new_role = "predictor") %>%
   update_role(price, new_role = "outcome") %>%
   step_novel(all_nominal_predictors()) %>%   # para las clases no antes vistas en el train. 
   step_dummy(all_nominal_predictors()) %>%  # crea dummies para las variables categóricas
@@ -167,7 +182,7 @@ workflow_1 <- workflow() %>%
 
 ## Set the validation process
 set.seed(15052024)
-block_folds <- spatial_block_cv(chapitrain, v=5)
+block_folds <- spatial_block_cv(base_train, v=5)
 autoplot(block_folds)
 
 tune_rest1 <- tune_grid(workflow_1,
@@ -178,14 +193,22 @@ tune_rest1 <- tune_grid(workflow_1,
 
 collect_metrics(tune_rest1)
 best_tune_res1 <- select_best(tune_rest1, metric="mae")
+print(best_tune_res1)
 res1_final <- finalize_workflow(workflow_1,best_tune_res1)
-EN_final1_fit <- fit(res1_final, data = chapitrain)
+EN_final1_fit <- fit(res1_final, data = base_train)
 
-augment(EN_final1_fit, new_data = chapitrain) %>%
-  mae(truth = price, estimate = .pred)
+print(augment(EN_final1_fit, new_data = chapitrain) %>%
+  mae(truth = price, estimate = .pred))
+
+return(EN_final1_fit)
+
+}
+
+
+predecir(chapitrain)
 
 #Predicciones
-predicciones <- predict(EN_final1_fit, new_data = test) %>%
+predicciones <- predict(predecir(chapitrain), new_data = test) %>%
   bind_cols(test)
 
 submission <- predicciones %>%
