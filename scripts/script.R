@@ -154,7 +154,7 @@ grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
 library(xgboost)
 #XGBoost
 xgboost_spec <- boost_tree(
-  trees = 10000,
+  trees = 5000,
   tree_depth = tune(),
   learn_rate = tune(),
   loss_reduction = tune(),
@@ -182,7 +182,7 @@ grid_values_xgboost <- grid_latin_hypercube(
 
 #property_type, dist_nearest_restaurant, dist_nearest_parques, dist_nearest_universidades,
 #  n_pisos_numerico, rooms_imp_numerico, baños, area, localidad,
-# sq_baños, sq_rooms, iluminado, remodelado, terraza, ascensor
+# sq_baños, sq_rooms, iluminado, remodelado, terraza, ascensor, estrato
 
 # Set workflows
 
@@ -223,6 +223,7 @@ best_tune_res1 <- select_best(tune_rest1, metric="mae")
 print(best_tune_res1)
 res1_final <- finalize_workflow(workflow_1,best_tune_res1)
 EN_final1_fit <- fit(res1_final, data = base_train)
+#EN_final1_fit <- fit(res1_final, data = chapitrain)
 
 print(augment(EN_final1_fit, new_data = chapitrain) %>%
   mae(truth = price, estimate = .pred))
@@ -232,7 +233,7 @@ return(EN_final1_fit)
 }
 
 
-pred_final <- predecir(chapitrain)
+pred_final <- predecir(chapisoletrain)
 
 #Predicciones
 predicciones <- predict(pred_final, new_data = test) %>%
