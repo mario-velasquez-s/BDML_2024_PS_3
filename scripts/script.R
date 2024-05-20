@@ -154,7 +154,7 @@ grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
 library(xgboost)
 #XGBoost
 xgboost_spec <- boost_tree(
-  trees = 1000,
+  trees = 10000,
   tree_depth = tune(),
   learn_rate = tune(),
   loss_reduction = tune(),
@@ -232,14 +232,14 @@ return(EN_final1_fit)
 }
 
 
-predecir(chapitrain)
+pred_final <- predecir(chapitrain)
 
 #Predicciones
-predicciones <- predict(predecir(chapitrain), new_data = test) %>%
+predicciones <- predict(pred_final, new_data = test) %>%
   bind_cols(test)
 
 submission <- predicciones %>%
   dplyr::select(property_id, .pred) %>%
   rename(price = .pred)
 
-write_csv(submission, "predicciones/submission.csv")
+write_csv(submission, "predicciones/submission_RV1_.csv")
