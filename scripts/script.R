@@ -166,7 +166,7 @@ predecir<- function(base_train){
 rec1 <- recipe(base_train) %>%
   update_role(property_type,  area, dist_nearest_restaurant,
               dist_nearest_parques, baños, n_pisos_numerico,dist_nearest_universidades,
-              terraza, ascensor,
+              terraza, ascensor, estrato,
               new_role = "predictor") %>%
   update_role(price, new_role = "outcome") %>%
   step_novel(all_nominal_predictors()) %>%   # para las clases no antes vistas en el train. 
