@@ -151,6 +151,31 @@ elastic_net_spec <- linear_reg(penalty = tune(), mixture = tune()) %>%
 grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
   expand_grid(mixture = c(0, 0.25,  0.5, 0.75,  1))
 
+library(xgboost)
+#XGBoost
+xgboost_spec <- boost_tree(
+  trees = 1000,
+  tree_depth = tune(),
+  learn_rate = tune(),
+  loss_reduction = tune(),
+  sample_size = tune(),
+  mtry = tune()
+) %>%
+  set_engine("xgboost") %>%
+  set_mode("regression")
+
+#Grid Values XGBoost
+grid_values_xgboost <- grid_latin_hypercube(
+  tree_depth(),
+  learn_rate(),
+  loss_reduction(),
+  sample_size = sample_prop(),
+  finalize(mtry(), train),
+  size = 20
+)
+
+
+
 #-------------------------------------------------------------------------------
 #                         VARIABLES' POOL
 #-------------------------------------------------------------------------------
@@ -163,10 +188,10 @@ grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
 
 predecir<- function(base_train){
 
-rec1 <- recipe(base_train) %>%
-  update_role(property_type,  area, dist_nearest_restaurant,
-              dist_nearest_parques, baños, n_pisos_numerico,dist_nearest_universidades,
-              terraza, ascensor, estrato,
+  rec1 <- recipe(base_train) %>%
+    update_role(property_type,  area, dist_nearest_restaurant,
+                dist_nearest_parques, baños, n_pisos_numerico,dist_nearest_universidades,
+                terraza, ascensor, estrato,
               new_role = "predictor") %>%
   update_role(price, new_role = "outcome") %>%
   step_novel(all_nominal_predictors()) %>%   # para las clases no antes vistas en el train. 
@@ -178,7 +203,9 @@ workflow_1 <- workflow() %>%
   # Agregar la receta de preprocesamiento de datos. En este caso la receta 1
   add_recipe(rec1) %>%
   # Agregar la especificación del modelo de regresión Elastic Net
-  add_model(elastic_net_spec)
+  #add_model(elastic_net_spec)
+  # Agregar la especificación del modelo de regresión XGBoost
+  add_model(xgboost_spec)
 
 ## Set the validation process
 set.seed(15052024)
@@ -187,7 +214,7 @@ autoplot(block_folds)
 
 tune_rest1 <- tune_grid(workflow_1,
                         resamples = block_folds,
-                        grid = grid_values,
+                        grid = grid_values_xgboost,
                         metrics = metric_set(mae)
 )
 
