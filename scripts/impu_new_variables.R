@@ -207,7 +207,7 @@ test <- area_with_rooms(test)
 train <- train %>% filter(!is.na(area))
 
 
-# Imputing information about number of bathrooms
+# Creating variable of terraza
 
 var_terraza <-function(base){
   base <- base %>% mutate(terraza_signal =str_extract(description, regex("(terraza|terrazas|balcon)")))
@@ -229,6 +229,19 @@ var_iluminado <-function(base){
 
 train <- var_iluminado(train)
 test <- var_iluminado(test)
+
+#Create a variable if it's an exterior or interior property
+var_extint <-function(base){
+  base <- base %>% mutate(ext_signal =str_extract(description, regex("(exterior)")))
+  base <- base %>% mutate(exterior = if_else(is.na(ext_signal), 0, 1)) %>% dplyr::select(-ext_signal)
+  base <- base %>% mutate(int_signal =str_extract(description, regex("(interior)")))
+  base <- base %>% mutate(interior = if_else(is.na(int_signal), 0, 1)) %>% dplyr::select(-int_signal)
+  
+  return(base)
+}
+
+train <- var_extint(train)
+test <- var_extint(test)
 
 
 #Create a variable if it was recently refurbished

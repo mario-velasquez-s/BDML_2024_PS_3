@@ -154,7 +154,7 @@ grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
 library(xgboost)
 #XGBoost
 xgboost_spec <- boost_tree(
-  trees = 5000,
+  trees = 8000,
   tree_depth = tune(),
   learn_rate = tune(),
   loss_reduction = tune(),
@@ -191,7 +191,7 @@ predecir<- function(base_train){
   rec1 <- recipe(base_train) %>%
     update_role(property_type,  area, dist_nearest_restaurant,
                 dist_nearest_parques, baños, n_pisos_numerico,dist_nearest_universidades,
-                terraza, ascensor, estrato,
+                terraza, ascensor, estrato, exterior,
               new_role = "predictor") %>%
   update_role(price, new_role = "outcome") %>%
   step_novel(all_nominal_predictors()) %>%   # para las clases no antes vistas en el train. 
@@ -233,7 +233,7 @@ return(EN_final1_fit)
 }
 
 
-pred_final <- predecir(chapisoletrain)
+pred_final <- predecir(chapitrain)
 
 #Predicciones
 predicciones <- predict(pred_final, new_data = test) %>%
@@ -243,4 +243,4 @@ submission <- predicciones %>%
   dplyr::select(property_id, .pred) %>%
   rename(price = .pred)
 
-write_csv(submission, "predicciones/submission_RV1_.csv")
+write_csv(submission, "predicciones/submission_RV2_.csv")
