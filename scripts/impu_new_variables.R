@@ -3,6 +3,8 @@
 # Maria Camila Arias, Martin Velasquez, Mario Velasquez
 # Problem Set 3
 # 
+test <- test %>%
+  rename(colegios_1km = colegios_1kmm)
 # Creation of new variables based on text and imputation
 train %>% count(bathrooms)
 ggplot(data=train,aes(x=bedrooms, y=bathrooms)) + geom_point()
@@ -322,7 +324,12 @@ useful_vars <- function(base){
                                  -n_pisos, -rooms_imp,-surface, -bathrooms,-bedrooms)
   return(base)
 }
+
+
 train <- useful_vars(train)
 test <- useful_vars(test)
 
 # ------------------------------------------------------------------------------
+
+
+
