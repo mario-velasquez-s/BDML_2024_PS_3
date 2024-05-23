@@ -53,6 +53,15 @@ university <- bogota %>%
 # Extract university points
 universidades <- university$osm_points
 
+## Estaciones de bus
+
+estaciones <- bogota %>%
+  add_osm_feature(key = 'amenity', value = 'bus_station') %>%
+  osmdata_sf()
+
+bus_station <- estaciones$osm_points
+
+
 ################Join
 # Calculate the shortest distance to the nearest restaurant for each property
 train$dist_nearest_restaurant <- st_nearest_feature(train, restaurantes)
@@ -65,6 +74,8 @@ train$dist_nearest_colegios <- st_nearest_feature(train, colegios)
 test$dist_nearest_colegios <- st_nearest_feature(test, colegios)
 train$dist_nearest_universidades <- st_nearest_feature(train, universidades)
 test$dist_nearest_universidades <- st_nearest_feature(test, universidades)
+train$dist_nearest_bus_station <- st_nearest_feature(train, bus_station)
+test$dist_nearest_bus_station <- st_nearest_feature(test, bus_station)
 
 
 # Convert the distances to more readable units (meters or kilometers as required)
@@ -78,6 +89,8 @@ train$dist_nearest_colegios <- st_distance(train, colegios[st_nearest_feature(tr
 test$dist_nearest_colegios <- st_distance(test, colegios[st_nearest_feature(test, colegios), ], by_element = TRUE)
 train$dist_nearest_universidades <- st_distance(train,universidades[st_nearest_feature(train, universidades), ], by_element = TRUE)
 test$dist_nearest_universidades <- st_distance(test,universidades[st_nearest_feature(test, universidades), ], by_element = TRUE)
+train$dist_nearest_bus_station <- st_distance(train,bus_station[st_nearest_feature(train, bus_station), ], by_element = TRUE)
+test$dist_nearest_bus_station <- st_distance(test,bus_station[st_nearest_feature(test, bus_station), ], by_element = TRUE)
 
 
 # Define a radius in meters (e.g., 1000 meters)
@@ -113,6 +126,7 @@ train$discotecas_300m <- sapply(st_intersects(train_buffer, discotecas), length)
 test$discotecas_300m <- sapply(st_intersects(test_buffer, discotecas), length)
 train$colegios_300m <- sapply(st_intersects(train_buffer, colegios), length)
 test$colegios_300m <- sapply(st_intersects(test_buffer, colegios), length)
+
 
 localidades <-st_read("data/poligonos-localidades.geojson")
 
@@ -169,3 +183,42 @@ st_write(test, "data/test_json_v3.geojson")
 st_write(train, "data/train_json_v3.geojson")
 
 
+
+
+tr_city_center <- st_sfc(st_point(c(-74.076100, 4.597859)), crs = st_crs(train$geometry))
+te_city_center <- st_sfc(st_point(c(-74.076100, 4.597859)), crs = st_crs(test$geometry))
+# Calculate the distance in meters (assuming your CRS uses meters, such as EPSG:3857)
+# If your data is in lat/long (EPSG:4326), you might want to transform it to a metric CRS first
+train$dis_centro <- st_distance(st_transform(train$geometry, 3857), st_transform(tr_city_center, 3857))
+test$dis_centro <- st_distance(st_transform(test$geometry, 3857), st_transform(te_city_center, 3857))
+
+tr_andino <- st_sfc(st_point(c(-74.052829, 4.666689)), crs = st_crs(train$geometry))
+te_andino <- st_sfc(st_point(c(-74.052829, 4.666689)), crs = st_crs(test$geometry))
+train$dis_andino <- st_distance(st_transform(train$geometry, 3857), st_transform(tr_andino, 3857))
+test$dis_andino <- st_distance(st_transform(test$geometry, 3857), st_transform(te_andino, 3857))
+
+
+radius_1000 <- 1000 #Ajustar
+
+# Create a buffer around each property
+train_buffer <- st_buffer(train, dist = radius_1000, nQuadSegs = 3)
+test_buffer <- st_buffer(test, dist = radius_1000, nQuadSegs = 3)
+
+# Count restaurants within the buffer
+train$restaurant_1km <- sapply(st_intersects(train_buffer, restaurantes), length)
+test$restaurant_1km <- sapply(st_intersects(test_buffer, restaurantes), length)
+train$parques_1km <- sapply(st_intersects(train_buffer, parques), length)
+test$parques_1km <- sapply(st_intersects(test_buffer, parques), length)
+train$discotecas_1km <- sapply(st_intersects(train_buffer, discotecas), length)
+test$discotecas_1km <- sapply(st_intersects(test_buffer, discotecas), length)
+train$colegios_1km <- sapply(st_intersects(train_buffer, colegios), length)
+test$colegios_1kmm <- sapply(st_intersects(test_buffer, colegios), length)
+train$uni_1km <- sapply(st_intersects(train_buffer, universidades), length)
+test$uni_1km <- sapply(st_intersects(test_buffer, universidades), length)
+train$bus_station_1km <- sapply(st_intersects(train_buffer, bus_station), length)
+test$bus_station_1km <- sapply(st_intersects(test_buffer, bus_station), length)
+
+
+
+st_write(test, "data/test_json_v5.geojson")
+st_write(train, "data/train_json_v5.geojson")

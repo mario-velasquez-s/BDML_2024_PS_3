@@ -30,7 +30,9 @@ p_load(rio, # import/export data
        spatialsample,
        recipes,
        lwgeom,
-       class)
+       class,
+       dials,
+       tidymodels)
 
 
 # 1: Initial Data Manipulation -----------------------------------------------
@@ -55,7 +57,7 @@ print(test_miss)
 
 ###############################################################################
 #                           Creation of geographic data    
-#                   (Takes to long to run. To avoid running, run
+#                   (Takes too long to run. To avoid running, run
 #                line 61 and 64 to get the resulting data frames)
 ###############################################################################
 
@@ -66,10 +68,10 @@ print(test_miss)
 #                         Start here to save time
 ###############################################################################
 # Read the 'test' shapefile
-train <- st_read("data/train_json_v3.geojson")
+train <- st_read("data/train_json_v5.geojson")
 
 # Read the 'train' shapefile
-test <- st_read("data/test_json_v3.geojson")
+test <- st_read("data/test_json_v5.geojson")
 
 ###############################################################################
 #           Imputation and creation of variables from description 
@@ -140,7 +142,7 @@ chapitrain <- train %>% subset(localidad== "Chapinero")
 traintrain <- train %>% subset(localidad != "Chapinero")
 chapicandetrain <- train %>% subset(localidad== "Chapinero" | localidad== "Candelaria")
 chapisoletrain <- train %>% subset(localidad== "Chapinero" | barriocomu== "La Soledad")
-
+nortetrain <- train %>% subset(localidad== "Chapinero" | localidad== "Barrios Unidos" | localidad== "Suba" | localidad== "Usaquén")
 
 #nrow(chapitrain)/nrow(train)
 
@@ -209,7 +211,7 @@ workflow_1 <- workflow() %>%
 
 ## Set the validation process
 set.seed(15052024)
-block_folds <- spatial_block_cv(base_train, v=5)
+block_folds <- spatial_block_cv(base_train, v=10)
 autoplot(block_folds)
 
 tune_rest1 <- tune_grid(workflow_1,
@@ -233,7 +235,7 @@ return(EN_final1_fit)
 }
 
 
-pred_final <- predecir(chapitrain)
+pred_final <- predecir(nortetrain)
 
 #Predicciones
 predicciones <- predict(pred_final, new_data = test) %>%
@@ -244,3 +246,16 @@ submission <- predicciones %>%
   rename(price = .pred)
 
 write_csv(submission, "predicciones/submission_RV2_.csv")
+
+
+
+#-------------------------------------------------------------------------------
+#                         Sin restringir a Chapinero
+#-------------------------------------------------------------------------------
+
+
+elastic_net_spec <- linear_reg(penalty = tune(), mixture = tune()) %>%
+  set_engine("glmnet")
+
+grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 50) %>%
+  expand_grid(mixture = c(0, 0.25,  0.5, 0.75,  1))
