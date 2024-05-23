@@ -156,9 +156,9 @@ grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
 library(xgboost)
 #XGBoost
 xgboost_spec <- boost_tree(
-  trees = 8000,
+  trees = 2000,
   tree_depth = tune(),
-  learn_rate = tune(),
+  learn_rate = 0.00125,
   loss_reduction = tune(),
   sample_size = tune(),
   mtry = tune()
@@ -169,7 +169,7 @@ xgboost_spec <- boost_tree(
 #Grid Values XGBoost
 grid_values_xgboost <- grid_latin_hypercube(
   tree_depth(),
-  learn_rate(),
+  #learn_rate(),
   loss_reduction(),
   sample_size = sample_prop(),
   finalize(mtry(), train),
@@ -193,7 +193,7 @@ predecir<- function(base_train){
   rec1 <- recipe(base_train) %>%
     update_role(property_type,  area, dist_nearest_restaurant,
                 dist_nearest_parques, baños, n_pisos_numerico,dist_nearest_universidades,
-                terraza, ascensor, estrato, exterior,
+                terraza, ascensor, estrato,
               new_role = "predictor") %>%
   update_role(price, new_role = "outcome") %>%
   step_novel(all_nominal_predictors()) %>%   # para las clases no antes vistas en el train. 
