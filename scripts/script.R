@@ -156,9 +156,10 @@ grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
 library(xgboost)
 #XGBoost
 xgboost_spec <- boost_tree(
-  trees = 2000,
+  trees = 800,
   tree_depth = tune(),
-  learn_rate = 0.00125,
+  #learn_rate = tune(),
+  learn_rate = 0.00137,
   loss_reduction = tune(),
   sample_size = tune(),
   mtry = tune()
@@ -175,6 +176,30 @@ grid_values_xgboost <- grid_latin_hypercube(
   finalize(mtry(), train),
   size = 20
 )
+
+library(keras)
+library(tensorflow)
+#Neural Network
+
+nn_spec <- function(units, penalty, epochs) {
+  model <- keras_model_sequential() %>%
+    layer_dense(units = units, activation = "relu") %>%
+    layer_dropout(rate = 0.2) %>%
+    layer_dense(units = units/2, activation = "relu") %>%
+    layer_dense(units = 1)  # Output layer
+  
+  compile(model,
+          optimizer = optimizer_adam(), 
+          loss = "mean_squared_error")
+}
+
+# Grid Values for Neural Network
+grid_values_nn <- expand.grid(
+  units = seq(5, 50, by = 5),
+  penalty = seq(0, 0.01, length.out = 5),  # Adjust regularization strength as needed
+  epochs = seq(50, 200, by = 50)
+)
+
 
 
 
@@ -193,7 +218,11 @@ predecir<- function(base_train){
   rec1 <- recipe(base_train) %>%
     update_role(property_type,  area, dist_nearest_restaurant,
                 dist_nearest_parques, baños, n_pisos_numerico,dist_nearest_universidades,
-                terraza, ascensor, estrato,
+                terraza, ascensor, estrato, dis_centro, dis_andino,
+                restaurant_1km, parques_1km, discotecas_1km, colegios_1km,
+                iluminado, exterior, remodelado, restaurant_300m, parques_300m,
+                discotecas_300m, colegios_300m, restaurant_100m, parques_100m, 
+                discotecas_100m, colegios_100m,
               new_role = "predictor") %>%
   update_role(price, new_role = "outcome") %>%
   step_novel(all_nominal_predictors()) %>%   # para las clases no antes vistas en el train. 
@@ -208,6 +237,9 @@ workflow_1 <- workflow() %>%
   #add_model(elastic_net_spec)
   # Agregar la especificación del modelo de regresión XGBoost
   add_model(xgboost_spec)
+  # Agregar la especificación del modelo de regresión XGBoost
+  #add_model(nn_spec)
+  
 
 ## Set the validation process
 set.seed(15052024)
