@@ -156,10 +156,10 @@ grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 10) %>%
 library(xgboost)
 #XGBoost
 xgboost_spec <- boost_tree(
-  trees = 800,
+  trees = 5000,
   tree_depth = tune(),
-  #learn_rate = tune(),
-  learn_rate = 0.00137,
+  learn_rate = tune(),
+  #learn_rate = 0.00125,
   loss_reduction = tune(),
   sample_size = tune(),
   mtry = tune()
@@ -170,7 +170,7 @@ xgboost_spec <- boost_tree(
 #Grid Values XGBoost
 grid_values_xgboost <- grid_latin_hypercube(
   tree_depth(),
-  #learn_rate(),
+  learn_rate(),
   loss_reduction(),
   sample_size = sample_prop(),
   finalize(mtry(), train),
@@ -267,7 +267,7 @@ return(EN_final1_fit)
 }
 
 
-pred_final <- predecir(nortetrain)
+pred_final <- predecir(chapitrain)
 
 #Predicciones
 predicciones <- predict(pred_final, new_data = test) %>%
