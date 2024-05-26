@@ -291,3 +291,313 @@ elastic_net_spec <- linear_reg(penalty = tune(), mixture = tune()) %>%
 
 grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 50) %>%
   expand_grid(mixture = c(0, 0.25,  0.5, 0.75,  1))
+
+#-------------------------------------------------------------------------------
+#                         Forward best subset selection
+#-------------------------------------------------------------------------------
+library(car)
+
+
+model_form<-  price ~ area + dist_nearest_restaurant +
+  dist_nearest_parques+ dist_nearest_universidades +
+  terraza + ascensor + estrato +
+  dist_nearest_bus_station + sq_rooms +
+  remodelado + dis_centro + dis_andino + (area + dist_nearest_restaurant +
+                                            dist_nearest_parques + dist_nearest_universidades +
+                                            terraza + ascensor + estrato + 
+                                            dist_nearest_bus_station + sq_rooms +
+                                            remodelado)^2
+
+fordward_model <- regsubsets(model_form, ## formula
+                             data = chapitrain, ## data frame Note we are using the training sample.
+                             nvmax = 2, ## show only the first 3  models models
+                             method = "forward" )  ## apply Forward Stepwise Selection
+
+max_nvars= fordward_model[["np"]]-1  ## minus one because it counts the intercept.
+max_nvars
+
+predict.regsubsets <- function(object, newdata, id, ...) {
+  form <- model_form
+  mat <- model.matrix(form, newdata)
+  coefi <- coef(object, id = id)
+  xvars <- names(coefi)
+  mat[, xvars] %*% coefi
+}
+
+k <- 10
+n <- nrow(train)
+folds <- sample(rep(1:k, length = n))
+
+calculateMAE <- function(actual, predicted) {
+  mean(abs(actual - predicted))
+}
+
+cv.mae_back <- matrix(NA, k, 50, dimnames = list(NULL, paste(1:50)))
+
+for (j in 1:k) {
+  print(j)
+  best_fit <- regsubsets(model_form, data = train[folds != j, ], nvmax = 50, method = "backward")
+  
+  for (i in 1:50) {
+    predicted_values <- predict(best_fit, train[folds == j, ], id = i)
+    
+    mae <- calculateMAE(train$price[folds == j], predicted_values)
+    cv.mae_back[j, i] <- mae
+  }
+}
+
+mean.mae_back <- apply(cv.mae_back, 2, mean)
+minMAEModelIndex_back <- which.min(mean.mae_back)
+
+plot(mean.mae_back, type = "b", xlab = "Number of Variables", ylab = "Mean Absolute Error")
+minMAEModelIndex_back
+
+best_fit <- regsubsets(model_form, data = train_pobre_numeric, nvmax = max_nvars, method = "backward")
+coef_info <- summary(best_fit)
+selected_variables <- names(coef(best_fit, id = minMAEModelIndex_back))
+formula_string <- paste("price ~", paste(selected_variables[-1], collapse = " + "))
+formula_string
+
+
+#-------------------------------------------------------------------------------
+#                         Random Forest
+#-------------------------------------------------------------------------------
+
+
+predecir_random_forest <- function(base_train) {
+  # Define the recipe
+  rec1 <- recipe(base_train) %>%
+    update_role(property_type, area, dist_nearest_restaurant,
+                dist_nearest_parques, baños, n_pisos_numerico, dist_nearest_universidades,
+                terraza, ascensor, estrato,
+                new_role = "predictor") %>%
+    update_role(price, new_role = "outcome") %>%
+    step_novel(all_nominal_predictors()) %>%
+    step_dummy(all_nominal_predictors()) %>%
+    step_zv(all_predictors()) %>%
+    step_normalize(all_predictors())
+  
+  # Define the model specification for Random Forest
+  rf_spec <- rand_forest(
+    mtry = tune(),
+    trees = 128,
+    min_n = tune()
+  ) %>%
+    set_mode("regression") %>%
+    set_engine("randomForest")
+  
+  # Create the workflow
+  workflow_1 <- workflow() %>%
+    add_recipe(rec1) %>%
+    add_model(rf_spec)
+  
+  # Set the validation process
+  set.seed(15052024)
+  block_folds <- spatial_block_cv(base_train, v = 5)
+  autoplot(block_folds)
+  
+  # Create a tuning grid, ensuring mtry uses integer values
+  rf_grid <- grid_regular(
+    mtry(range = c(1, floor(sqrt(ncol(base_train))))),  # Ensure integer values for mtry
+    min_n(c(5, 10))
+  )
+  
+  # Perform tuning
+  tune_res1 <- tune_grid(
+    workflow_1,
+    resamples = block_folds,
+    grid = rf_grid,
+    metrics = metric_set(mae)  # Focus on MAE
+  )
+  
+  # Collect and view metrics
+  collect_metrics(tune_res1)
+  best_tune_res1 <- select_best(tune_res1, metric = "mae")
+  print(best_tune_res1)
+  
+  # Finalize the workflow
+  res1_final <- finalize_workflow(workflow_1, best_tune_res1)
+  rf_final_fit <- fit(res1_final, data = base_train)
+  
+  # Print out the performance on new data
+  print(augment(rf_final_fit, new_data = nortetrain) %>%
+          mae(truth = price, estimate = .pred))
+  
+  return(rf_final_fit)
+}
+
+
+resultados_rf <- predecir_random_forest(nortetrain)
+predicciones <- predict(resultados_rf, new_data = test) %>%
+  bind_cols(test)
+
+submission <- predicciones %>%
+  dplyr::select(property_id, .pred) %>%
+  rename(price = .pred)
+
+write_csv(submission, "predicciones/submission_random_forest_1.csv")
+
+
+#-------------------------------------------------------------------------------
+#                         Linear regression
+#-------------------------------------------------------------------------------
+
+predecir_regresion <- function(base_train) {
+  # Define the recipe
+  rec1 <- recipe(base_train) %>%
+    update_role(area,dist_nearest_restaurant,
+                dist_nearest_parques, dist_nearest_universidades,
+                terraza, ascensor,
+                dist_nearest_bus_station, sq_rooms,
+                remodelado, dis_centro, dis_andino,
+                new_role = "predictor") %>%
+    update_role(price, new_role = "outcome") %>%
+    step_novel(all_nominal_predictors()) %>%
+    step_dummy(all_nominal_predictors()) %>%
+    step_zv(all_predictors()) %>%
+    step_normalize(all_predictors()) %>%
+    step_interact(terms = ~ area:dist_nearest_restaurant)
+  
+  # Define the linear regression model specification
+  lm_spec <- linear_reg() %>%
+    set_engine("lm") %>%
+    set_mode("regression")
+  
+  # Create the workflow
+  workflow_1 <- workflow() %>%
+    add_recipe(rec1) %>%
+    add_model(lm_spec)
+  
+  # Set the validation process using spatial cross-validation
+  set.seed(15052024)
+  block_folds <- spatial_block_cv(base_train, v = 10)
+  autoplot(block_folds)
+  
+  # Evaluate the model using cross-validation
+  fit_results <- fit_resamples(
+    workflow_1,
+    resamples = block_folds,
+    metrics = metric_set(mae)
+  )
+  
+  # Collect metrics
+  metrics <- collect_metrics(fit_results)
+  print(metrics)
+  
+  # Fit the final model on the complete training data
+  final_fit <- fit(workflow_1, data = base_train)
+  
+  # Print out the performance on new data
+  print(augment(final_fit, new_data = nortetrain) %>%
+          mae(truth = price, estimate = .pred))
+  
+  return(final_fit)
+}
+
+
+
+resultados_lm <- predecir_regresion(train) #MAE de 188125112
+predicciones <- predict(resultados_lm, new_data = test) %>%
+  bind_cols(test)
+
+submission <- predicciones %>%
+  dplyr::select(property_id, .pred) %>%
+  rename(price = .pred)
+
+write_csv(submission, "predicciones/linear_regression_1.csv")
+
+#-------------------------------------------------------------------------------
+#                         Neural network
+#-------------------------------------------------------------------------------
+
+
+base_train <- chapitrain[, c("area", "dist_nearest_restaurant", "dist_nearest_parques", 
+                             "dist_nearest_universidades", "terraza", "ascensor", 
+                             "dist_nearest_bus_station", "sq_rooms", "remodelado", 
+                             "dis_centro", "dis_andino", "dist_nearest_colegios",
+                             "restaurant_100m","parques_100m","estrato", "sq_baños","barriocomu",
+                             "price"), drop = FALSE]
+
+
+attr(base_train, "class") <- "data.frame"
+attr(base_train, "sf_column") <- NULL
+base_train <- separate(base_train, geometry, into = c("latitude", "longitude"), sep = ",")
+indices <- which(names(base_train) %in% c("latitude", "longitude"))
+
+# Drop the columns using the column indices
+base_train <- base_train[, -indices]
+
+
+# Create the recipe with non-geometric variables
+recipe <- recipe(price ~ ., data = base_train) %>%
+  step_dummy(all_nominal(), one_hot = TRUE)
+
+# Prepare and bake the recipe
+prepared_recipe <- prep(recipe, training = base_train)
+final_data <- bake(prepared_recipe, new_data = NULL)  # NULL implies original data
+
+
+# Separate features and target
+train_data <- final_data[, !names(final_data) %in% "price"]
+train_labels <- final_data$price
+
+# Define the neural network model
+model <- keras_model_sequential() %>%
+  layer_dense(units = 10000, activation = 'relu', input_shape = c(ncol(train_data))) %>%
+  layer_dense(units = 5000, activation = 'relu') %>%
+  layer_dense(units = 3000, activation = 'relu') %>%
+  layer_dense(units = 1000, activation = 'relu') %>%
+  layer_dense(units = 1)
+
+# Compile the model
+model %>% compile(
+  loss = 'mae',
+  optimizer = 'adam',
+  metrics = c('mean_absolute_error')
+)
+
+# Fit the model
+history <- model %>% fit(
+  x = as.matrix(train_data),
+  y = train_labels,
+  epochs = 30,
+  batch_size = 32,
+  validation_split = 0.2
+)
+
+
+# Print model summary
+print(model %>% summary())
+
+
+base_test <- test[, c("area", "dist_nearest_restaurant", "dist_nearest_parques", 
+                      "dist_nearest_universidades", "terraza", "ascensor", 
+                      "dist_nearest_bus_station", "sq_rooms", "remodelado", 
+                      "dis_centro", "dis_andino", "dist_nearest_colegios",
+                      "restaurant_100m","parques_100m", "Identificador.unico.de.la.localidad","estrato", "sq_baños",
+                      "price"), drop = FALSE]
+
+attr(base_test, "class") <- "data.frame"
+attr(base_test, "sf_column") <- NULL
+base_test <- separate(base_test, geometry, into = c("latitude", "longitude"), sep = ",")
+indices <- which(names(base_test) %in% c("latitude", "longitude"))
+
+# Drop the columns using the column indices
+base_test <- base_test[, -indices]
+
+base_test <- bake(prepared_recipe, new_data = base_test)
+
+if ("price" %in% names(base_test)) {
+  new_features <- base_test[, !names(base_test) %in% "price"]
+} else {
+  new_features <- base_test
+}
+
+# Since the new data doesn't have a 'price' column, use all columns as features
+new_features_matrix <- as.matrix(new_features)
+
+# Convert features to matrix format as expected by the keras model
+predicted_prices <- predict(model, new_features_matrix)
+predictions_df <- data.frame(Predicted_Prices = predicted_prices)
+write.csv(predictions_df, file = "predicciones/predicted_prices_nn_v2.csv", row.names = FALSE)
+base_test$price <- as.numeric(predicted_prices)
