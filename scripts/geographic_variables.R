@@ -129,7 +129,6 @@ test$colegios_300m <- sapply(st_intersects(test_buffer, colegios), length)
 
 
 localidades <-st_read("data/poligonos-localidades.geojson")
-
 test <- st_join(test, localidades, join = st_within)
 
 # Do the same for the train dataset if needed

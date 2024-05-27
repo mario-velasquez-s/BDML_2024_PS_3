@@ -32,6 +32,10 @@ p_load(rio, # import/export data
        lwgeom,
        class,
        dials,
+       tidymodels,
+       car,
+       leaps,
+       tune,
        tidymodels)
 
 
@@ -40,7 +44,7 @@ user <- Sys.getenv("USERNAME") # or you can hardcode the username if needed
 if (user == "Maria.Arias") {
   setwd("C:/Users/Maria.Arias/OneDrive - Universidad de los andes/MSc Economics/Big Data & Machine Learning/Problem set 3/carpeta equipo/BDML_2024_PS_3")
 } else if (user == "marti") {
-  setwd("C:/Users/marti/OneDrive/Documentos/BDML_2024/BDML_2024/BDML_2024_PS_3_definitivo")
+  setwd("C:/Users/marti/OneDrive/Documentos/GIT_Repositories/BDML_2024_PS_3___versionfinal")
 } else if (user == "mario") {
   setwd("C:/Users/mario/Desktop/TODO/UNI ANDES/SEM 8 (2024-1)/Big Data y Machine Learning/Taller 3/BDML_2024_PS_3")
 } 
@@ -132,6 +136,74 @@ train <- train %>% dplyr::select(-price_per_rooms,-price_per_area)
 
 # Ideally, we will use only Chapinero properties in the train set, but there 
 # only 307 observations. So, we will try with different combinations of bases for training.
+###############################################################################
+#                           Descriptive statistics
+###############################################################################
+
+localidades <-st_read("data/poligonos-localidades.geojson")
+
+coords <- st_coordinates(train)
+
+# Find the minimum latitude
+min_latitude <- min(coords[, "Y"])
+max_latitude <- max(coords[, "Y"])
+
+# Find the minimum and maximum longitude
+min_longitude <- min(coords[, "X"])
+max_longitude <- max(coords[, "X"])
+
+
+ggplot() +
+  geom_sf(data = localidades$geometry, color = "red") + 
+  geom_sf(data = train, aes(color = localidad), shape = 15, size = 0.3) +  # Increased size for display in the plot
+  coord_sf(xlim = c(min_longitude, max_longitude), ylim = c(min_latitude, max_latitude)) +
+  scale_color_viridis_d(option = "viridis", name = "Localidad") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        legend.key.size = unit(0.5, "lines")) +  # Adjust legend key size if needed
+  guides(color = guide_legend(override.aes = list(size = 4))) +  # Increase the size of legend symbols
+  labs(color = "Localidad")
+
+variables_of_interest <- c(
+  "price", "n_pisos_numerico", "rooms_imp_numerico", "baños", 
+  "area", "terraza", "exterior", "remodelado", "ascensor", 
+  "dist_nearest_restaurant", "dist_nearest_parques", "dist_nearest_discotecas",
+  "dist_nearest_colegios", "dist_nearest_universidades", "dist_nearest_bus_station",
+  "restaurant_100m", "parques_100m", "discotecas_100m", "colegios_100m",
+  "restaurant_300m", "parques_300m", "discotecas_300m", "colegios_300m",
+  "estrato", "dis_centro", "dis_andino",
+  "restaurant_1km", "parques_1km", "discotecas_1km", "colegios_1km"
+)
+
+# Function to compute min, max, average, and standard deviation for each variable in a data frame
+summarize_data <- function(df, vars) {
+  sapply(vars, function(var) {
+    data <- na.omit(df[[var]])  # Remove NA values for accurate calculations
+    c(min = min(data), max = max(data), avg = mean(data), sd = sd(data))
+  })
+}
+
+# Applying the function to both datasets
+train_summary <- summarize_data(train, variables_of_interest)
+test_summary <- summarize_data(test, variables_of_interest)
+
+# Convert summaries to data frames and transpose
+train_summary_df <- as.data.frame(t(train_summary), stringsAsFactors = FALSE)
+test_summary_df <- as.data.frame(t(test_summary), stringsAsFactors = FALSE)
+
+# Set names for clarity in the combined table
+names(train_summary_df) <- c("Train Min", "Train Max", "Train Avg", "Train SD")
+names(test_summary_df) <- c("Test Min", "Test Max", "Test Avg", "Test SD")
+
+# Combine the summaries side-by-side instead of using rbind
+combined_summary <- cbind(train_summary_df, test_summary_df)
+
+# Add row names for clarity
+rownames(combined_summary) <- variables_of_interest
+
+# Print the summary table
+print(combined_summary)
+
 
 ###############################################################################
 #                                 Models 
@@ -280,23 +352,9 @@ submission <- predicciones %>%
 write_csv(submission, "predicciones/submission_RV2_.csv")
 
 
-
-#-------------------------------------------------------------------------------
-#                         Sin restringir a Chapinero
-#-------------------------------------------------------------------------------
-
-
-elastic_net_spec <- linear_reg(penalty = tune(), mixture = tune()) %>%
-  set_engine("glmnet")
-
-grid_values <- grid_regular(penalty(range = c(-2,1)), levels = 50) %>%
-  expand_grid(mixture = c(0, 0.25,  0.5, 0.75,  1))
-
 #-------------------------------------------------------------------------------
 #                         Forward best subset selection
 #-------------------------------------------------------------------------------
-library(car)
-
 
 model_form<-  price ~ area + dist_nearest_restaurant +
   dist_nearest_parques+ dist_nearest_universidades +
@@ -309,7 +367,7 @@ model_form<-  price ~ area + dist_nearest_restaurant +
                                             remodelado)^2
 
 fordward_model <- regsubsets(model_form, ## formula
-                             data = chapitrain, ## data frame Note we are using the training sample.
+                             data = train, ## data frame Note we are using the training sample.
                              nvmax = 2, ## show only the first 3  models models
                              method = "forward" )  ## apply Forward Stepwise Selection
 
@@ -349,7 +407,7 @@ for (j in 1:k) {
 mean.mae_back <- apply(cv.mae_back, 2, mean)
 minMAEModelIndex_back <- which.min(mean.mae_back)
 
-plot(mean.mae_back, type = "b", xlab = "Number of Variables", ylab = "Mean Absolute Error")
+plot(mean.mae_back, type = "b", xlab = "Número de predictores", ylab = "MAE")
 minMAEModelIndex_back
 
 best_fit <- regsubsets(model_form, data = train_pobre_numeric, nvmax = max_nvars, method = "backward")
@@ -543,9 +601,9 @@ train_labels <- final_data$price
 
 # Define the neural network model
 model <- keras_model_sequential() %>%
-  layer_dense(units = 10000, activation = 'relu', input_shape = c(ncol(train_data))) %>%
-  layer_dense(units = 5000, activation = 'relu') %>%
+  layer_dense(units = 4000, activation = 'relu', input_shape = c(ncol(train_data))) %>%
   layer_dense(units = 3000, activation = 'relu') %>%
+  layer_dense(units = 2000, activation = 'relu') %>%
   layer_dense(units = 1000, activation = 'relu') %>%
   layer_dense(units = 1)
 
@@ -601,3 +659,5 @@ predicted_prices <- predict(model, new_features_matrix)
 predictions_df <- data.frame(Predicted_Prices = predicted_prices)
 write.csv(predictions_df, file = "predicciones/predicted_prices_nn_v2.csv", row.names = FALSE)
 base_test$price <- as.numeric(predicted_prices)
+
+
