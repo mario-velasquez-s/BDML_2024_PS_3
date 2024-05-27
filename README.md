@@ -64,14 +64,14 @@ Las primeras 85 líneas del archivo inicial script son cruciales, ya que incluye
 
 Después de la fila 139, cada sección se ejecuta de manera independiente:
 
-    Existe una sección de análisis visual de los datos y, después, una sección independiente para la generación de cada uno de los modelos.
+Existe una sección de análisis visual de los datos y, después, una sección independiente para la generación de cada uno de los modelos.
 
 Este enfoque modular ayuda en la gestión eficiente de scripts largos, especialmente cuando se centra en partes específicas del análisis de datos o cuando se necesita volver a ejecutar solo ciertas secciones debido a actualizaciones iterativas en el flujo de trabajo de análisis.
 
 ## Frameworks, Librerías y Programas:
 
-    Los scripts del proyecto fueron llevados a cabo en R.
-    El documento final que consolida las conclusiones y el análisis fue realizado en LaTex.
+Los scripts del proyecto fueron llevados a cabo en R.
+El documento final que consolida las conclusiones y el análisis fue realizado en LaTex.
 
 ##
 
