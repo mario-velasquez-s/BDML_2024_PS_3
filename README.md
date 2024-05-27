@@ -54,6 +54,25 @@ Los siguientes paquetes de R son necesarios para manejar el análisis de datos, 
      p_load(rio, tidyverse, skimr, gridExtra, corrplot, stargazer, MASS, rvest, dplr, ggplot2, visdat, caret, sf, osmdata, tidymodels, parsnip, glmnet, rattle, spatialsample, recipes, lwgeom, class, dials, car, leaps, tune, tidymodels)
      ```
 
+## Uso:
+**Configuración y Manipulación Inicial de Datos**
+
+El script comienza limpiando el entorno y configurando los paquetes necesarios utilizando el paquete pacman para una gestión eficiente. Luego, determina el sistema operativo del usuario y establece el directorio de trabajo correspondiente para manejar archivos de datos específicos según las configuraciones del usuario.
+Generación del DataFrame
+
+Las primeras 85 líneas del archivo inicial script son cruciales, ya que incluyen la importación de datos, funciones de preprocesamiento y la imputación de datos faltantes. Estas líneas deben ejecutarse primero para generar el DataFrame requerido para los análisis subsiguientes. Los archivos de limpiza y generación de dato espaciales son diferentes a el archivo principal, llamado script. 
+
+Después de la fila 139, cada sección se ejecuta de manera independiente:
+
+    Existe una sección de análisis visual de los datos y, después, una sección independiente para la generación de cada uno de los modelos.
+
+Este enfoque modular ayuda en la gestión eficiente de scripts largos, especialmente cuando se centra en partes específicas del análisis de datos o cuando se necesita volver a ejecutar solo ciertas secciones debido a actualizaciones iterativas en el flujo de trabajo de análisis.
+
+## Frameworks, Librerías y Programas:
+
+    Los scripts del proyecto fueron llevados a cabo en R.
+    El documento final que consolida las conclusiones y el análisis fue realizado en LaTex.
+
 ##
 
  Autores
@@ -61,6 +80,5 @@ Los siguientes paquetes de R son necesarios para manejar el análisis de datos, 
 - María Camila Arias
 - Martín Velásquez
 - Mario Velásquez
-- Daniela Vlasak
 
 Este archivo README debería proporcionar una guía clara y exhaustiva para cualquier usuario interesado en ejecutar o entender mejor este proyecto de investigación.
