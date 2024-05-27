@@ -81,4 +81,3 @@ El documento final que consolida las conclusiones y el análisis fue realizado e
 - Martín Velásquez
 - Mario Velásquez
 
-Este archivo README debería proporcionar una guía clara y exhaustiva para cualquier usuario interesado en ejecutar o entender mejor este proyecto de investigación.
