@@ -1,4 +1,4 @@
-# BDML_2024_PS_3Here's the updated README file content in Spanish, reflecting the changes in the project's focus and description:
+# BDML_2024_PS_3
 
 ---
 
